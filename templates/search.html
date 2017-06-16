@@ -1,0 +1,23 @@
+<!doctype html>
+<title>Pizza Finder</title>
+<form action="/find">
+Pizza Purveyor: <input type="text" name="name" /><br>
+How many results? <input type="text" name="count" value="5"/>
+<input type="submit" value="Find me a pizza.py!">
+</form>
+{% if results %}
+<br />
+<br />
+<h2>{{pizza_name}}</h2>
+<h3>Average Rating: {{results['average_rating']}}</h3>
+<table border=0 width="70%">
+{% for review in results['reviews'] %}
+  <tr>
+    <td width="20%" style="font-weight:bold;vertical-align:top;">Date: {{review['date'] | pretty_date}}<br />
+      <br />
+      Rating: {{review['rating']}}</td>
+    <td width="80%">{{review['content']}}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endif %}
