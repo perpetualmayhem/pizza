@@ -6,7 +6,16 @@ Cheapie review aggregator. Uses the Yelp API to grab your pizza place, then scra
 ### Without Docker
 * Install the required libraries
     ```pip install -r requirements.txt```
-* Export needed env and run Flask
+* Export needed env and run Flask (were this being deployed anywhere these secrets would live in a secret store...)
     ```source dev.env && flask run```
 * Use your web browser to go find a New York slice
     ```http://localhost:5000```
+
+### With Docker
+* Build it
+    ```docker build -t . pizza```
+* Run it
+    ```docker run -p 5000:5000 pizza```
+* Get it
+    ```http://DOCKER_HOST:5000```
+    - Discover your docker host ip with ```docker-machine env```
