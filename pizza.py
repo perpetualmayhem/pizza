@@ -53,6 +53,14 @@ def get_review_date(review_div):
   # fell out
   return None
 
+# from a review div, get the date
+def get_review_author(review_div):
+  # dates are found in spans of class rating-qualifier
+  for anchor in review_div.find_all('a'):
+    if has_class(anchor, 'user-display-name'):
+      return anchor.text
+  return None
+
 # from a review div, get the rating
 def get_review_rating(review_div):
   rating_div = filter(lambda x: has_class(x, 'i-stars'),
@@ -78,8 +86,9 @@ def get_reviews(soup):
   review_divs = get_review_divs(soup)
   # do some quick extraction here to reduce what's passed around
   reviews = map(lambda x: {'date': get_review_date(x),
-                            'content': get_review_text(x),
-                            'rating': get_review_rating(x)}, review_divs)
+                            'content': get_review_text(x).replace('\n', '<br>'),
+                            'rating': get_review_rating(x),
+                            'author': get_review_author(x)}, review_divs)
   # order what's left by date, desc
   return sorted(reviews, 
                           key=lambda x: x['date'],

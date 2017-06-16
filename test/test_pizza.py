@@ -36,6 +36,7 @@ def test_review_extraction():
     review_div = review_divs[0]
     assert date(2017, 4, 22) == get_review_date(review_div)
     assert 5.0 == get_review_rating(review_div)
+    assert 'Bennett W.' == get_review_author(review_div)
     review_text = get_review_text(review_div)
     assert review_text.startswith('4/19/2017:This coffee shop is the best.')
     assert len(review_text) == 1072

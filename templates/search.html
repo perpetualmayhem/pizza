@@ -13,7 +13,8 @@ How many results? <input type="text" name="count" value="5"/>
 <table border=0 width="70%">
 {% for review in results['reviews'] %}
   <tr>
-    <td width="20%" style="font-weight:bold;vertical-align:top;">Date: {{review['date'] | pretty_date}}<br />
+    <td width="20%" style="font-weight:bold;vertical-align:top;">Author: {{review['author']}}<br />
+      Date: {{review['date'] | pretty_date}}<br />
       <br />
       Rating: {{review['rating']}}</td>
     <td width="80%">{{review['content']}}</td>
