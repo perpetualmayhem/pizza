@@ -1,7 +1,7 @@
 <!doctype html>
 <title>Pizza Finder</title>
 <form action="/find">
-Pizza Purveyor: <input type="text" name="name" /><br>
+Pizza Purveyor: <input type="text" name="name" {% if search_term %}value="{{search_term}}" {% endif %}/><br>
 How many results? <input type="text" name="count" value="5"/>
 <input type="submit" value="Find me a pizza.py!">
 </form>

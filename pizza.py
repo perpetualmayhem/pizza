@@ -151,7 +151,7 @@ def pizza_display():
       arg_dict = request.form
     else:
       arg_dict = request.args
-    pizza_name = arg_dict.get('name')
+    pizza_term = arg_dict.get('name')
     review_count = arg_dict.get('count', DEFAULT_REVIEW_COUNT)
     # coercion for the count since we will get a string
     # also make sure it's no more than 10
@@ -159,18 +159,20 @@ def pizza_display():
       review_count = min(10, int(review_count))
     except ValueError:
       review_count = DEFAULT_REVIEW_COUNT
-    if pizza_name is None:
+    if pizza_term is None:
       print "Request:" + request.__repr__()
       print "Form:" + str(request.form)
       return render_template('search.html')
     else:
-      result = find_pizza(pizza_name)
+      result = find_pizza(pizza_term)
       pizza_url = result['url'].split('?')[0] # dump trailing junk
       pizza_name = result['name']
-      #pizza_soup = soup_url(pizza_url)
-      #print pizza_soup
-      canned_soup = None
-      with open('fbc.htm', 'r') as myfile:
-        canned_soup = BeautifulSoup(myfile.read(), 'html.parser')
-      pizza_reviews = get_n_reviews_with_avg(canned_soup, review_count)
-      return render_template('search.html', results=pizza_reviews, pizza_name=pizza_name)
+      pizza_soup = soup_url(pizza_url)
+      print pizza_soup
+      pizza_reviews = get_n_reviews_with_avg(pizza_soup, review_count)
+#     canned_soup = None
+#      with open('fbc.htm', 'r') as myfile:
+#        canned_soup = BeautifulSoup(myfile.read(), 'html.parser')
+#      pizza_reviews = get_n_reviews_with_avg(canned_soup, review_count)
+      return render_template('search.html', results=pizza_reviews, 
+                              pizza_name=pizza_name, search_term=pizza_term)
