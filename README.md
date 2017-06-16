@@ -19,3 +19,10 @@ Cheapie review aggregator. Uses the Yelp API to grab your pizza place, then scra
 * Get it
     ```http://DOCKER_HOST:5000```
     - Discover your docker host ip with ```docker-machine env```
+
+### Unit Tests
+* Install pytest
+    ```pip install pytest```
+* Test it
+    ```pytest test```
+

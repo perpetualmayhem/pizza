@@ -66,12 +66,16 @@ def soup_url(url):
     response = requests.get(url, headers=headers)
     return BeautifulSoup(response.content, 'html.parser')
 
-# take a souped review page and grab ALL the reviews.
-def get_reviews(soup):
+def get_review_divs(soup):
   review_divs = filter(lambda x: has_class(x, 'review'), soup.find_all('div'))
   # pop off the first one of these, it's just us and our non-existent review
   if review_divs is not None and len(review_divs) > 0:
     review_divs.pop(0)
+  return review_divs
+
+# take a souped review page and grab ALL the reviews.
+def get_reviews(soup):
+  review_divs = get_review_divs(soup)
   # do some quick extraction here to reduce what's passed around
   reviews = map(lambda x: {'date': get_review_date(x),
                             'content': get_review_text(x),
@@ -168,11 +172,6 @@ def pizza_display():
       pizza_url = result['url'].split('?')[0] # dump trailing junk
       pizza_name = result['name']
       pizza_soup = soup_url(pizza_url)
-      print pizza_soup
       pizza_reviews = get_n_reviews_with_avg(pizza_soup, review_count)
-#     canned_soup = None
-#      with open('fbc.htm', 'r') as myfile:
-#        canned_soup = BeautifulSoup(myfile.read(), 'html.parser')
-#      pizza_reviews = get_n_reviews_with_avg(canned_soup, review_count)
       return render_template('search.html', results=pizza_reviews, 
                               pizza_name=pizza_name, search_term=pizza_term)
