@@ -12,35 +12,10 @@ import pytest
 def test_avg():
   assert 4 == avg([2, 4, 6])
 
-def test_has_class():
-  raw_html = '<div class="foo baz"></div>'
-  soup = BeautifulSoup(raw_html, 'html.parser')
-  div = soup.find('div')
-  assert has_class(div, "foo")
-  assert not has_class(div, "bar")
-
-def test_parse_rating_from_title():
-  assert 5.0 == parse_rating_from_title('5.0 star rating')
-  assert None == parse_rating_from_title('500 star rating')
-  assert None == parse_rating_from_title('stars upon thars')
-
 # monolithic test for several layers of soup
 def test_review_extraction():
   with open('test/fixtures/fbc.htm', 'r') as fbc:
     canned_soup = BeautifulSoup(fbc.read(), 'html.parser')
-    # see that we got a review div in this
-    review_divs = get_review_divs(canned_soup)
-    # should have 20 reviews
-    assert 20 == len(review_divs)
-    # grab this first (real) one
-    review_div = review_divs[0]
-    assert date(2017, 4, 22) == get_review_date(review_div)
-    assert 5.0 == get_review_rating(review_div)
-    assert 'Bennett W.' == get_review_author(review_div)
-    review_text = get_review_text(review_div)
-    assert review_text.startswith('4/19/2017:This coffee shop is the best.')
-    assert len(review_text) == 1072
-    # now, do it again with the wrapper (with sorting)
     reviews = get_reviews(canned_soup)
     assert len(reviews) == 20
     review = reviews[0]

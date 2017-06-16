@@ -5,99 +5,55 @@ import requests
 import re
 import os
 import json
-from datetime import date
+from datetime import datetime
 from urllib import urlencode
 from flask import Flask, render_template, request
 
-TITLE_TO_RATING = r'(\d\.\d) star rating'
-YELP_DATE_MATCHER = r'(\d{1,2})/(\d{1,2})/(\d{4})'
 DEFAULT_REVIEW_COUNT = 5
+CHROME_UA = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) '
+  +'AppleWebKit/537.36 (KHTML, like Gecko) '
+  +'Chrome/58.0.3029.110 Safari/537.36')
 
-API_SECRET_ID = None
-API_SECRET = None
-
-# easy average
+# easy averages
 def avg(values):
   return sum(values)/len(values)
-
-### Specific parsing of some tags and content
-
-# does the given tag have the requested class? used to filter everywhere.
-def has_class(tag, class_str):
-  return 'class' in tag.attrs and class_str in tag.attrs.get('class')
-
-# turn "5.0 star rating" into 5.0f, or returns None if it didn't find something good.
-def parse_rating_from_title(title):
-  # guaranteed to be valid and numeric
-  # unless re match failed
-  try:
-    return float(re.sub(TITLE_TO_RATING, '\\1', title))
-  except ValueError:
-    # if it matched, it was numeric, so musta not matched.
-    return None
-
-# from a review div, get the content
-def get_review_text(review_div):
-  return review_div.find('p').text
-
-# from a review div, get the date
-def get_review_date(review_div):
-  # dates are found in spans of class rating-qualifier
-  for span in review_div.find_all('span'):
-    if has_class(span, 'rating-qualifier'):
-      # see if there's a date
-      m = re.search(YELP_DATE_MATCHER, span.text)
-      if m is not None:
-        (month, day, year) = map(int, m.groups())
-        return date(year, month, day)
-  # fell out
-  return None
-
-# from a review div, get the date
-def get_review_author(review_div):
-  # dates are found in spans of class rating-qualifier
-  for anchor in review_div.find_all('a'):
-    if has_class(anchor, 'user-display-name'):
-      return anchor.text
-  return None
-
-# from a review div, get the rating
-def get_review_rating(review_div):
-  rating_div = filter(lambda x: has_class(x, 'i-stars'),
-                      review_div.find_all('div'))[0]
-  return parse_rating_from_title(rating_div.attrs.get('title'))
 
 # act like a human! beep boop. take a url and turn it into soup.
 def soup_url(url):
     # pretend we're chrome to be less obvious robots
-    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+    headers = {'User-Agent': CHROME_UA}
     response = requests.get(url, headers=headers)
     return BeautifulSoup(response.content, 'html.parser')
 
-def get_review_divs(soup):
-  review_divs = filter(lambda x: has_class(x, 'review'), soup.find_all('div'))
-  # pop off the first one of these, it's just us and our non-existent review
-  if review_divs is not None and len(review_divs) > 0:
-    review_divs.pop(0)
-  return review_divs
+# page has a json block containing all the reviews! This is kind of a cheat
+# See earlier rev for a more tag-based approach
+def get_review_dict(soup):
+  for script in soup.findAll('script'):
+    if script.attrs.get('type') == 'application/ld+json':
+      return json.loads(script.text)
+  return {}
 
 # take a souped review page and grab ALL the reviews.
 def get_reviews(soup):
-  review_divs = get_review_divs(soup)
-  # do some quick extraction here to reduce what's passed around
-  reviews = map(lambda x: {'date': get_review_date(x),
-                            'content': get_review_text(x).replace('\n', '<br>'),
-                            'rating': get_review_rating(x),
-                            'author': get_review_author(x)}, review_divs)
-  # order what's left by date, desc
-  return sorted(reviews, 
-                          key=lambda x: x['date'],
-                          reverse=True)
+  review_dict = get_review_dict(soup)
+  # trim down the information passed
+  reviews = map(lambda x: {'date': datetime.strptime(x['datePublished'], 
+                                                      '%Y-%m-%d').date(),
+                          'rating': float(x['reviewRating']['ratingValue']),
+                          'content': x['description'],
+                          'author': x['author']}, 
+                review_dict['review'])
+  # return them sorted by date desc
+  return sorted(reviews,
+                key=lambda x: x['date'],
+                reverse=True)
 
 # from a souped review page, get ONLY num_reviews reviews + their average.
 def get_n_reviews_with_avg(soup, num_reviews):
   reviews = get_reviews(soup)[0:num_reviews]
-  avg_rating = avg(filter(lambda x: x is not None, map(lambda x: x['rating'], reviews)))
+  avg_rating = avg(filter(lambda x: x is not None,
+                          map(lambda x: x['rating'],
+                            reviews)))
   return {"average_rating": avg_rating,
           "reviews": reviews}
 
@@ -110,7 +66,8 @@ def refresh_token(secret_id, secret):
   response = requests.post(url, args)
   os.environ['PIZZA_ACCESS_TOKEN'] = response.json()['access_token']
 
-# returns raw HTTP response. this is what we refresh/retry if the token is expired.
+# returns raw HTTP response. 
+# this is what we refresh/retry if the token is expired.
 def do_pizza_search(name):
   url = 'https://api.yelp.com/v3/businesses/search'
   params = {'term': name,
@@ -119,7 +76,8 @@ def do_pizza_search(name):
     'limit': 1
     }
   # authorize
-  headers = {'Authorization': "Bearer %s" % os.environ.get('PIZZA_ACCESS_TOKEN')}
+  headers = {'Authorization': 
+              "Bearer %s" % os.environ.get('PIZZA_ACCESS_TOKEN')}
   return requests.get(url, params=params, headers=headers)
 
 # get the first NY pizza place returned by the API for this name
